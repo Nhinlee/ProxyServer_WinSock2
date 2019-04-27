@@ -1,10 +1,11 @@
 ﻿//#include "pch.h"
 #include "Proxy_Parse.h"
 #include<fstream>	
-
+#include<time.h>
 //data:
 map<string, int> blacklist;
-//char Forbidden[] = "HTTP/1.1 403 Forbidden";
+string fbd403;
+//Function:
 bool GetDomainName(char *request, char *dname)
 {
 	int n = strlen(request), pos = 0, i = 0;
@@ -89,6 +90,49 @@ bool UpdateBlacklist(string input)
 	return true;
 }
 
+char* strtochar(string s)
+{
+	int n = s.length();
+	char* a = new char[n + 1];
+	for (int i = 0; i < n; i++)
+		a[i] = s[i];
+	a[n] = '\0';
+	return a;
+}
+
+void UpdateDate(string &res)
+{
+	time_t t;
+	tm *pt;
+	time(&t);
+	pt = gmtime(&t);
+
+	int pos = res.find("Date: ");
+	char* temp = asctime(pt);
+	temp[strlen(temp) - 1] = '\0';
+	res.insert(pos + 6, " GMT");
+	res.insert(pos + 6, temp);
+}
+
+bool Update403(string input)
+{
+	ifstream inp(input);
+	if (inp.fail())
+		return false;
+	char c;
+	while (!inp.eof())
+	{
+		c = inp.get();
+		if (c == -1)
+			break;
+		if (c == '\n')
+			fbd403.push_back('\r');
+		fbd403.push_back(c);
+	}
+	UpdateDate(fbd403);
+	return true;
+}
+
 UINT Proxy(LPVOID prams)
 {
 	cout << "Da co Client ket noi !!! \n\n";
@@ -128,7 +172,9 @@ UINT Proxy(LPVOID prams)
 	//Refuse with blacklist:
 	if (blacklist[dname])
 	{
-		//bytes = send(ClientSocket, Forbidden, sizeof Forbidden, 0);
+		char* res = strtochar(fbd403);
+		bytes = send(ClientSocket, res, (int)strlen(res), 0);
+		delete res;
 		cout << "-------------Web in black list----------------" << endl;
 		closesocket(ClientSocket);
 		return 0;

@@ -75,6 +75,8 @@ int main()
 	//Update blacklist:
 	UpdateBlacklist("blacklist.conf");
 
+	//Update 403 request:
+	Update403("403.conf");
 	//proxy process:
 	while (true) 
 	{
@@ -82,17 +84,17 @@ int main()
 		ClientSocket = accept(ListenSocket, NULL, NULL);
 		if (ClientSocket == INVALID_SOCKET) {
 			cout << "accept failed with error: " << WSAGetLastError();
-			closesocket(ListenSocket);
+			/*closesocket(ListenSocket);
 			WSACleanup();
-			return 1;
+			return 1;*/
+			continue;
 		}
-
 		// Thread:
-		//AfxBeginThread(Proxy, (LPVOID)ClientSocket);
-		Proxy((LPVOID)ClientSocket);
+		AfxBeginThread(Proxy, (LPVOID)ClientSocket);
+		//Proxy((LPVOID)ClientSocket);
 	}
 
-	
+	closesocket(ListenSocket);
 	WSACleanup();
 	system("pause");
 	return iResult;

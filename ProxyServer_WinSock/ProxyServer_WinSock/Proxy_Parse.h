@@ -11,4 +11,5 @@ bool IsGETMethod(char *request);
 bool IsPOSTMethod(char *request);
 int GetContent_Length(string head);
 bool UpdateBlacklist(string input);
+bool Update403(string input);
 UINT Proxy(LPVOID prams);
