@@ -1,6 +1,10 @@
 ﻿//#include "pch.h"
 #include "Proxy_Parse.h"
-	
+#include<fstream>	
+
+//data:
+map<string, int> blacklist;
+//char Forbidden[] = "HTTP/1.1 403 Forbidden";
 bool GetDomainName(char *request, char *dname)
 {
 	int n = strlen(request), pos = 0, i = 0;
@@ -36,6 +40,7 @@ bool IsGETMethod(char *request)
 		return true;
 	return false;
 }
+
 bool IsPOSTMethod(char *request)
 {
 	if (strlen(request) < 4)
@@ -44,6 +49,7 @@ bool IsPOSTMethod(char *request)
 		return true;
 	return false;
 }
+
 int GetContent_Length(string head)
 {
 	int pos = head.find("Content-Length: ");
@@ -62,6 +68,25 @@ int GetContent_Length(string head)
 		sum /= 10;
 		return sum;
 	}
+}
+
+bool UpdateBlacklist(string input)
+{
+	ifstream inp(input);
+	if (inp.fail())
+		return false;
+	string host;
+	while (!inp.eof())
+	{
+		inp >> host;
+		blacklist[host]++;
+		if (host.find("www.") == -1)
+		{
+			host = "www." + host;
+			blacklist[host]++;
+		}
+	}
+	return true;
 }
 
 UINT Proxy(LPVOID prams)
@@ -98,6 +123,16 @@ UINT Proxy(LPVOID prams)
 		return 0;
 	}
 	else cout << dname << "\n";
+
+	
+	//Refuse with blacklist:
+	if (blacklist[dname])
+	{
+		//bytes = send(ClientSocket, Forbidden, sizeof Forbidden, 0);
+		cout << "-------------Web in black list----------------" << endl;
+		closesocket(ClientSocket);
+		return 0;
+	}
 
 	//GET IP from Host name of web server:
 	hostent *remoteHost = gethostbyname(dname);

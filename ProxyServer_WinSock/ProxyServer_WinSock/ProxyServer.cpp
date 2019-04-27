@@ -3,10 +3,10 @@
 #include"Proxy_Parse.h"
 
 #pragma comment(lib,"Ws2_32.lib")
-#define DEFAULT_BUFLEN 1460
-#define DEFAULT_PORT "8888"
 
 using namespace std;
+
+//map<string, int> blacklist;
 
 int main()
 {
@@ -71,7 +71,11 @@ int main()
 		return 1;
 	}
 	cout << "\t\t\t\t\tlistenning-------------------- ^ ^\n";
-	
+		
+	//Update blacklist:
+	UpdateBlacklist("blacklist.conf");
+
+	//proxy process:
 	while (true) 
 	{
 		SOCKET ClientSocket = INVALID_SOCKET;
@@ -84,8 +88,8 @@ int main()
 		}
 
 		// Thread:
-		AfxBeginThread(Proxy, (LPVOID)ClientSocket);
-		//Proxy((LPVOID)ClientSocket);
+		//AfxBeginThread(Proxy, (LPVOID)ClientSocket);
+		Proxy((LPVOID)ClientSocket);
 	}
 
 	
