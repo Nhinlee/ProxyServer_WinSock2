@@ -5,6 +5,12 @@
 //data:
 map<string, int> blacklist;
 string fbd403;
+struct HEADER_IN_CACHE {
+	bool Exist;
+	string filename;
+	string date;
+	int size;
+};
 //Function:
 bool GetDomainName(char *request, char *dname)
 {
@@ -106,7 +112,6 @@ void UpdateDate(string &res)
 	tm *pt;
 	time(&t);
 	pt = gmtime(&t);
-
 	int pos = res.find("Date: ");
 	char* temp = asctime(pt);
 	temp[strlen(temp) - 1] = '\0';
@@ -138,6 +143,7 @@ UINT Proxy(LPVOID prams)
 	cout << "Da co Client ket noi !!! \n\n";
 	// Initialize buffer memory and ClientSocket:
 	SOCKET ClientSocket = (SOCKET)prams;
+	// Buffer:
 	char request[5000] = { 0 }, dname[100] = { 0 }, ip[16] = { 0 },
 		body_res[DEFAULT_BUFLEN] = { 0 }, header_res[5000] = { 0 };
 
@@ -149,6 +155,7 @@ UINT Proxy(LPVOID prams)
 	else if (bytes == 0)
 	{
 		cout << " No Request !!!\n";
+		closesocket(ClientSocket);
 		return 0;
 	}
 
@@ -158,6 +165,9 @@ UINT Proxy(LPVOID prams)
 		closesocket(ClientSocket);
 		return 0;
 	}
+
+	//Get File Name:
+	string filename = GetFileName(request);
 
 	//Get Host Name:
 	if (GetDomainName(request, dname) == false)
@@ -172,8 +182,11 @@ UINT Proxy(LPVOID prams)
 	//Refuse with blacklist:
 	if (blacklist[dname])
 	{
+		//Update 403 request:
+		Update403("403.conf");
 		char* res = strtochar(fbd403);
 		bytes = send(ClientSocket, res, (int)strlen(res), 0);
+		fbd403.clear();
 		delete res;
 		cout << "-------------Web in black list----------------" << endl;
 		closesocket(ClientSocket);
@@ -231,6 +244,7 @@ UINT Proxy(LPVOID prams)
 		else endhead = 0;
 		id++;
 	}
+	//
 
 	//Send Header Respones for client( Browser) with id (bytes) exactly:
 	bytes = send(ClientSocket, header_res, id, 0);
@@ -240,8 +254,30 @@ UINT Proxy(LPVOID prams)
 	int ctlength = GetContent_Length(head);
 	cout << "Content-Length: " << ctlength << endl;
 
+	//
+	string headerdate = Get_Last_Modified(header_res);
+	HEADER_IN_CACHE temp;
+	temp = { false,"","",0 };
+	temp = Find_In_Cache(filename);
+
+	if (temp.Exist && headerdate == temp.date)
+	{
+		ifstream inp(temp.filename+".conf");
+		char c;
+		while (!inp.eof())
+		{
+			c = inp.get();
+			bytes = send(ClientSocket, &c, 1, 0);
+		}
+		closesocket(ClientSocket);
+		closesocket(ConnectSocket);
+		return 1;
+	}
+	
+	//
 	//Get body response from web server:
 	int bytes_rev = 0, sum_bytes = 0;
+	ofstream out(filename + ".conf");
 	do
 	{
 		bytes_rev = recv(ConnectSocket, body_res, DEFAULT_BUFLEN, 0);
@@ -249,7 +285,10 @@ UINT Proxy(LPVOID prams)
 		ctlength -= bytes_rev;
 		if (bytes_rev > 0) {
 			cout << "Bytes received: " << bytes_rev << endl;
-
+			//
+			string body = chartostr(body_res);
+			out << body;
+			//
 			// Echo the buffer back to the sender
 			int bytes_send = send(ClientSocket, body_res, bytes_rev, 0);
 			if (bytes_send == SOCKET_ERROR) {
@@ -283,6 +322,13 @@ UINT Proxy(LPVOID prams)
 			return 0;
 		}
 	} while (bytes_rev > 0);
+
+	temp.date = headerdate;
+	temp.Exist = true;
+	temp.filename = filename;
+	temp.size = sum_bytes;
+	BackUpHeader(temp);
+
 	cout << sum_bytes << endl;
 	cout << "Da Thuc Hien Xong !\n\n";
 

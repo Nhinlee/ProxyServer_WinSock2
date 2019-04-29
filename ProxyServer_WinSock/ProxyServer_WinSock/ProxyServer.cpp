@@ -2,7 +2,7 @@
 #include"stdafx.h"
 #include"Proxy_Parse.h"
 
-#pragma comment(lib,"Ws2_32.lib")
+//#pragma comment(lib,"Ws2_32.lib")
 
 using namespace std;
 
@@ -50,7 +50,7 @@ int main()
 	}
 	else cout << "\t\t\t\t\tListenSocket has been Created \n";
 
-	// Setup the TCP listening socket
+	// Setup the TCP listening socket:
 	iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR) {
 		cout << "bind failed with error: " << WSAGetLastError();
@@ -75,8 +75,6 @@ int main()
 	//Update blacklist:
 	UpdateBlacklist("blacklist.conf");
 
-	//Update 403 request:
-	Update403("403.conf");
 	//proxy process:
 	while (true) 
 	{
@@ -87,11 +85,12 @@ int main()
 			/*closesocket(ListenSocket);
 			WSACleanup();
 			return 1;*/
+			closesocket(ClientSocket);
 			continue;
 		}
 		// Thread:
-		AfxBeginThread(Proxy, (LPVOID)ClientSocket);
-		//Proxy((LPVOID)ClientSocket);
+		//AfxBeginThread(Proxy, (LPVOID)ClientSocket);
+		Proxy((LPVOID)ClientSocket);
 	}
 
 	closesocket(ListenSocket);
