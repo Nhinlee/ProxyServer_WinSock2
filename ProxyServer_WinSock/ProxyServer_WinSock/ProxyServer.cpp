@@ -1,4 +1,3 @@
-
 #include"stdafx.h"
 #include"Proxy_Parse.h"
 
@@ -12,10 +11,10 @@ int main()
 {
 	WSADATA wsaData;
 	int iResult;
-	
+
 	SOCKET ListenSocket = INVALID_SOCKET;
 	//SOCKET ClientSocket = INVALID_SOCKET;
-	
+
 	struct addrinfo *result = NULL;
 	struct addrinfo hints;
 
@@ -39,7 +38,7 @@ int main()
 		WSACleanup();
 		return 1;
 	}
-	
+
 	// Create a SOCKET for connecting to server
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET) {
@@ -71,12 +70,12 @@ int main()
 		return 1;
 	}
 	cout << "\t\t\t\t\tlistenning-------------------- ^ ^\n";
-		
+
 	//Update blacklist:
 	UpdateBlacklist("blacklist.conf");
 
 	//proxy process:
-	while (true) 
+	while (true)
 	{
 		SOCKET ClientSocket = INVALID_SOCKET;
 		ClientSocket = accept(ListenSocket, NULL, NULL);
@@ -89,8 +88,8 @@ int main()
 			continue;
 		}
 		// Thread:
-		//AfxBeginThread(Proxy, (LPVOID)ClientSocket);
-		Proxy((LPVOID)ClientSocket);
+		AfxBeginThread(Proxy, (LPVOID)ClientSocket);
+		//Proxy((LPVOID)ClientSocket);
 	}
 
 	closesocket(ListenSocket);
